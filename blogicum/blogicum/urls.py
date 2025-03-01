@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import include, path, reverse_lazy
 from django.conf import settings
 
-from users.views import UserCreateView
+from users.views import UserCreateView, UserDetailView
 
 
 urlpatterns = [
@@ -28,6 +28,7 @@ urlpatterns = [
     path('posts/', include('blog.urls')),
     path('auth/', include('django.contrib.auth.urls')),
     path('auth/registration/', UserCreateView.as_view(), name='registration'),
+    path('profile/<str:username>/', UserDetailView.as_view(), name='profile'),
 ]
 
 if settings.DEBUG:
