@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'core.apps.CoreConfig',
     'django_bootstrap5',
-    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -148,8 +147,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 LOGIN_URL = 'login'
-
-AUTH_USER_MODEL = 'users.UserBlogicum'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 

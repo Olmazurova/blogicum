@@ -20,9 +20,8 @@ NUMBER_OF_POSTS = 10
 
 
 class IndexListView(ListView):
-    """
-    Представление для главной страницы сайта.
-    """
+    """Представление для главной страницы сайта."""
+
     # Ещё нужно добавить правильную фильтрацию????
     model = Post
     ordering = 'pub_date'
@@ -42,13 +41,11 @@ class IndexListView(ListView):
 
 
 class PostDetailView(DetailView):
-    """
-    Представление для отдельного поста.
-    """
+    """Представление для отдельного поста."""
+
     # Фильтрация???
     model = Post
     template_name = 'blog/detail.html'
-
 
 
 # def post_detail(request: HttpRequest, post_id: int) -> Callable:
@@ -63,8 +60,9 @@ class PostDetailView(DetailView):
 
 class CategoryListView(ListView):
     """Представление для категорий постов."""
+
     # Фильтрация
-    model = Category # или Post???
+    model = Category  # или Post???
     ordering = 'pub_date'
     paginate_by = NUMBER_OF_POSTS
     template_name = 'blog/category.html'
@@ -91,8 +89,15 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
-    success_url = reverse_lazy('profile:<username>')  # Как правильно здесь написать?
+    # success_url = reverse_lazy('blog:profile')  # Как здесь написать?
 
+    # С помощью этого метода наконец-то стала загружаться
+    # страница профиля profile/username
+    def get_success_url(self):
+        return reverse_lazy(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
 
     def form_valid(self, form):
         """Заполняет поле формы автор и возвращает валидацию формы."""
@@ -126,4 +131,3 @@ class PostDeleteView(UserPassesTestMixin, DeleteView):
         """Проверяет является ли пользователь автором поста."""
         object = self.get_object()
         return object.author == self.request.user
-    
