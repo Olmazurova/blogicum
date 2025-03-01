@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import (
@@ -84,17 +85,23 @@ class CategoryListView(ListView):
 #     return render(request, 'blog/category.html', context)
 
 
-class PostCreateView(CreateView):
+class PostCreateView(LoginRequiredMixin, CreateView):
     """Представление добавления нового поста."""
 
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
     success_url = reverse_lazy('profile:<username>')  # Как правильно здесь написать?
-    # TODO: Валидация формы, добавление данных в контекст, фильтрация
 
 
-class PostUpdateView(UpdateView):
+    def form_valid(self, form):
+        """Заполняет поле формы автор и возвращает валидацию формы."""
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+    # TODO: фильтрация
+
+
+class PostUpdateView(UserPassesTestMixin, UpdateView):
     """Представление редактирования существующего поста."""
 
     model = Post
@@ -102,11 +109,21 @@ class PostUpdateView(UpdateView):
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:post_detail')  # Как правильно???
 
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object.author == self.request.user
 
-class PostDeleteView(DeleteView):
+
+class PostDeleteView(UserPassesTestMixin, DeleteView):
     """Представление удаления текущего поста."""
 
     model = Post
     template_name = 'blog/create.html'
     success_url = reverse_lazy('profile:<username>')
+
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object.author == self.request.user
     
