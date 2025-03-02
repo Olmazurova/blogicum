@@ -11,7 +11,7 @@ urlpatterns: list[path] = [
     path('profile/<str:username>/', UserDetailView.as_view(), name='profile'),
     path('<int:post_id>/', views.PostDetailView.as_view(), name='post_detail'),
     path(
-        '<int:post_id>/delete',
+        '<int:post_id>/delete/',
         views.PostDeleteView.as_view(),
         name='delete'
     ),
@@ -21,4 +21,5 @@ urlpatterns: list[path] = [
         views.CategoryListView.as_view(),
         name='category_posts'
     ),
+    path('<int:post_id>/comment/', views.CommentCreateView.as_view(), name='add_comment')
 ]

@@ -10,10 +10,10 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 
-from .forms import PostForm
-from .models import Category, Post
+from .forms import PostForm, CommentForm
+from .models import Category, Post, Comment
 from .utils import add_default_filters, get_selection_of_posts
 
 NUMBER_OF_POSTS = 10
@@ -46,6 +46,18 @@ class PostDetailView(DetailView):
     # Фильтрация???
     model = Post
     template_name = 'blog/detail.html'
+
+    def get_context_data(self, **kwargs):
+        """
+        Добавляем в контекст:
+        - форму для создания комментария,
+        - авторов комментариев.
+        """
+        context = super().get_context_data(**kwargs)
+        context['form'] = CommentForm()
+        context['comments'] = self.object.comments.select_related('author')
+        return context
+    
 
 
 # def post_detail(request: HttpRequest, post_id: int) -> Callable:
@@ -131,3 +143,23 @@ class PostDeleteView(UserPassesTestMixin, DeleteView):
         """Проверяет является ли пользователь автором поста."""
         object = self.get_object()
         return object.author == self.request.user
+
+
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    """Представление создания комментария к посту."""
+
+    post = None
+    model = Comment
+    form_class = CommentForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.post = get_object_or_404(Post, pk=kwargs['pk'])
+        return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.post = self.post
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'pk': self.post.pk})
