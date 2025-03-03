@@ -21,5 +21,19 @@ urlpatterns: list[path] = [
         views.CategoryListView.as_view(),
         name='category_posts'
     ),
-    path('<int:post_id>/comment/', views.CommentCreateView.as_view(), name='add_comment')
+    path(
+        '<int:post_id>/comment/',
+        views.CommentCreateView.as_view(),
+        name='add_comment'
+    ),
+    path(
+        '<int:post_id>/edit_comment/<int:comment_id>',
+        views.CommentUpdateView.as_view(),
+        name='edit_comment'
+    ),
+    path(
+        '<int:post_id>/delete_comment/<int:comment_id>',
+        views.CommentDeleteView.as_view(),
+        name='delete_comment'
+    ),
 ]

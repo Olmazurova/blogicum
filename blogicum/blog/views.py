@@ -163,3 +163,30 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'pk': self.post.pk})
+
+
+class CommentUpdateView(UserPassesTestMixin, UpdateView):
+    """Представление для редактирования комментария к посту."""
+
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object.author == self.request.user
+
+
+class CommentDeleteView(UserPassesTestMixin, DeleteView):
+    """Представления для удаления комментария к посту."""
+
+    model = Comment
+    template_name = 'blog/comment.html'
+    success_url = reverse_lazy('blog:post_detail') # !!! сделать правильно
+
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object.author == self.request.user
+        
