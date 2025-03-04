@@ -1,7 +1,7 @@
 from django.urls import path
 
 from . import views
-from core.views import UserDetailView
+from core.views import UserDetailView, UserUpdateView
 
 app_name: str = 'blog'
 
@@ -9,13 +9,14 @@ urlpatterns: list[path] = [
     path('', views.IndexListView.as_view(), name='index'),
     path('create/', views.PostCreateView.as_view(), name='create_post'),
     path('profile/<str:username>/', UserDetailView.as_view(), name='profile'),
+    path('profile/<str:username>/edit/', UserUpdateView.as_view(), name='edit_profile'),
     path('<int:post_id>/', views.PostDetailView.as_view(), name='post_detail'),
     path(
         '<int:post_id>/delete/',
         views.PostDeleteView.as_view(),
-        name='delete'
+        name='delete_post'
     ),
-    path('<int:post_id>/edit/', views.PostUpdateView.as_view(), name='edit'),
+    path('<int:post_id>/edit/', views.PostUpdateView.as_view(), name='edit_post'),
     path(
         '<slug:category_slug>/',
         views.CategoryListView.as_view(),
