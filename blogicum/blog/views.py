@@ -1,8 +1,9 @@
 from collections.abc import Callable
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Count
 from django.http import HttpRequest
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, get_list_or_404
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -29,7 +30,7 @@ class IndexListView(ListView):
 
     def get_queryset(self):
         """Отфильтровывает нужные посты на страницу."""
-        return Post.objects.filter(**add_default_filters())
+        return Post.objects.filter(**add_default_filters()).annotate(comment_count=Count('comments'))
 
 
 # def index(request: HttpRequest) -> Callable:
@@ -83,30 +84,24 @@ class CategoryListView(ListView):
 
     # Фильтрация
     model = Category  # или Post???
-    # ordering = 'pub_date'
-    # paginate_by = NUMBER_OF_POSTS
+    ordering = 'pub_date'
+    paginate_by = NUMBER_OF_POSTS
     template_name = 'blog/category.html'
 
     def get_queryset(self):
-        return get_object_or_404(
-            Category,
-            slug=self.kwargs['category_slug'],
-            is_published=True
-        )
-
-    # def get_object(self):
-    #     return get_object_or_404(
-    #         Category,
-    #         slug=self.kwargs['category_slug'],
-    #         is_published=True
-    #     )
+        return get_list_or_404(
+            Post.objects.select_related('category').filter(
+                category__slug=self.kwargs['category_slug'],
+                **add_default_filters(),
+            ).annotate(comment_count=Count('comments')))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['post_list'] = get_selection_of_posts('category').filter(
-            category__slug=self.kwargs['category_slug'],
-            **add_default_filters(),
-        ).order_by('pub_date')
+        context['category'] = get_object_or_404(Category,
+            slug=self.kwargs['category_slug'],
+            is_published=True
+        )
+        # context['comment_count'] = Comment.objects.filter(post=)
         return context
 
 

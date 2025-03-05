@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.urls import reverse_lazy
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from blog.models import Post
@@ -38,30 +38,30 @@ class UserDetailView(DetailView):
 
 class UserUpdateView(UserPassesTestMixin, UpdateView):
     """Представление редактирования профиля пользователя."""
-    pass
-    # model = User
-    # form_class = UserCreationForm
-    # template_name = 'registration/registration_form.html'
-    #
-    # def get_context_data(self, **kwargs):
-    #     """Добавляем в контекст заполненную форму."""
-    #     context = super().get_context_data(**kwargs)
-    #     instance = get_object_or_404(User, username=self.kwargs['username'])
-    #     form = UserCreationForm(self.request.POST or None, instance=instance)
-    #     context['form'] = form
-    #     return context
-    #
-    # def test_func(self):
-    #     """Проверяет является ли пользователь автором поста."""
-    #     object = self.get_object()
-    #     return object == self.request.user
-    #
-    # def get_success_url(self):
-    #     """Перенаправляет на страницу профиля пользователя."""
-    #     return reverse_lazy(
-    #         'blog:profile',
-    #         kwargs={'username': self.request.user.username}
-    #     )
+
+    model = User
+    form_class = UserChangeForm
+    template_name = 'registration/registration_form.html'
+
+    def get_context_data(self, **kwargs):
+        """Добавляем в контекст заполненную форму."""
+        context = super().get_context_data(**kwargs)
+        instance = get_object_or_404(User, username=self.kwargs['username'])
+        form = UserChangeForm(self.request.POST or None, instance=instance)
+        context['form'] = form
+        return context
+
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object == self.request.user
+
+    def get_success_url(self):
+        """Перенаправляет на страницу профиля пользователя."""
+        return reverse_lazy(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
 
 
 def page_not_found(request, exeption):
