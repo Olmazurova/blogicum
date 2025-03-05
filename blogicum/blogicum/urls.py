@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import include, path, reverse_lazy
 from django.conf import settings
 
-from core.views import UserCreateView, UserDetailView
+from core.views import UserCreateView
 
 
 urlpatterns = [

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+{% load django_bootstrap5 %}
+{% block title %}
+  Редактирование профиля пользователя {{ profile.username }}
+{% endblock %}
+{% block content %}
+  <h1 class="mb-5 text-center ">Редактирование профиля пользователя {{ profile.username }}</h1>
+   <form method="post">
+          {% csrf_token %}
+          {% bootstrap_form form %}
+          {% bootstrap_button button_type="submit" content="Редактирвать" %}
+   </form>
+{% endblock content %}

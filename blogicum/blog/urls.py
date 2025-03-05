@@ -1,15 +1,15 @@
 from django.urls import path
 
 from . import views
-from core.views import UserDetailView, UserUpdateView
+from core.views import UserUpdateView, UserListView
 
 app_name: str = 'blog'
 
 urlpatterns: list[path] = [
     path('', views.IndexListView.as_view(), name='index'),
     path('create/', views.PostCreateView.as_view(), name='create_post'),
-    path('profile/<str:username>/', UserDetailView.as_view(), name='profile'),
-    path('profile/<str:username>/edit/', UserUpdateView.as_view(), name='edit_profile'),
+    path('profile/edit/', UserUpdateView.as_view(), name='edit_profile'),
+    path('profile/<str:username>/', UserListView.as_view(), name='profile'),
     path('<int:post_id>/', views.PostDetailView.as_view(), name='post_detail'),
     path(
         '<int:post_id>/delete/',
