@@ -86,7 +86,6 @@ class PostDetailView(DetailView):
 class CategoryListView(ListView):
     """Представление для категорий постов."""
 
-    # Фильтрация
     model = Category  # или Post???
     ordering = 'pub_date'
     paginate_by = NUMBER_OF_POSTS
@@ -97,7 +96,7 @@ class CategoryListView(ListView):
             Post.objects.select_related('category').filter(
                 category__slug=self.kwargs['category_slug'],
                 **add_default_filters(),
-            ).annotate(comment_count=Count('comments')))
+            ).annotate(comment_count=Count('comments')).order_by('-pub_date'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -146,10 +145,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
-    # TODO: фильтрация
 
-
-class PostUpdateView(UserPassesTestMixin, UpdateView):
+class PostUpdateView(LoginRequiredMixin, UpdateView):
     """Представление редактирования существующего поста."""
 
     model = Post
@@ -234,10 +231,21 @@ class CommentUpdateView(UserPassesTestMixin, UpdateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
+    def get_object(self, queryset = None):
+        print(self.request)
+        return get_object_or_404(
+            Comment,
+            id=self.kwargs['comment_id'],
+            # post=self.kwargs['post_id']
+        )
+
     def test_func(self):
         """Проверяет является ли пользователь автором поста."""
         object = self.get_object()
         return object.author == self.request.user
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'post_id': self.kwargs['post_id']})
 
 
 class CommentDeleteView(UserPassesTestMixin, DeleteView):
