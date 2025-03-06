@@ -22,6 +22,8 @@ class UserCreateView(CreateView):
 
 
 class UserListView(ListView):
+    """Представление профиля пользователя."""
+
     model = User
     template_name = 'blog/profile.html'
     paginate_by = 10
@@ -31,7 +33,7 @@ class UserListView(ListView):
             author=get_object_or_404(User, username=self.kwargs['username']).id
         ).annotate(
             comment_count=Count('comments')
-        ).order_by('pub_date')
+        ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         """Добавляем в контекст данные профиля и посты автора."""

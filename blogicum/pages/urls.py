@@ -1,17 +1,17 @@
 from django.urls import path
-from django.views.generic import TemplateView
+from .views import AboutTemplateView, RulesTemplateView
 
 app_name: str = 'pages'
 
 urlpatterns: list[path] = [
     path(
         'about/',
-        TemplateView.as_view(template_name='pages/about.html'),
+        AboutTemplateView.as_view(),
         name='about'
     ),
     path(
         'rules/',
-        TemplateView.as_view(template_name='pages/rules.html'),
+        RulesTemplateView.as_view(),
         name='rules'
     ),
 ]
