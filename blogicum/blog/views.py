@@ -24,13 +24,17 @@ class IndexListView(ListView):
     """Представление для главной страницы сайта."""
 
     model = Post
-    ordering = 'pub_date'
+    # ordering = '-pub_date'
     paginate_by = NUMBER_OF_POSTS
     template_name = 'blog/index.html'
 
     def get_queryset(self):
         """Отфильтровывает нужные посты на страницу."""
-        return Post.objects.filter(**add_default_filters()).annotate(comment_count=Count('comments'))
+        return Post.objects.filter(
+            **add_default_filters()
+        ).annotate(
+            comment_count=Count('comments')
+        ).order_by('-pub_date')
 
 
 # def index(request: HttpRequest) -> Callable:
