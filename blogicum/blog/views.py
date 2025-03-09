@@ -1,9 +1,6 @@
-from collections.abc import Callable
-
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count
-from django.http import HttpRequest
-from django.shortcuts import get_object_or_404, render, get_list_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -20,32 +17,34 @@ from .utils import add_default_filters, get_selection_of_posts
 NUMBER_OF_POSTS = 10
 
 
+class AuthorTestMixin(UserPassesTestMixin):
+
+    def test_func(self):
+        """Проверяет является ли пользователь автором поста."""
+        object = self.get_object()
+        return object.author == self.request.user
+
+class ReverseMixin:
+    def get_success_url(self):
+        """Перенаправляет пользователя на страницу поста."""
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.kwargs['post_id']},
+        )
+
 class IndexListView(ListView):
     """Представление для главной страницы сайта."""
 
     model = Post
-    # ordering = '-pub_date'
     paginate_by = NUMBER_OF_POSTS
     template_name = 'blog/index.html'
 
     def get_queryset(self):
-        """Отфильтровывает нужные посты на страницу."""
         return Post.objects.filter(
             **add_default_filters()
         ).annotate(
             comment_count=Count('comments')
         ).order_by('-pub_date')
-
-
-# def index(request: HttpRequest) -> Callable:
-#     """Представление для главной страницы сайта."""
-#     post_list = Post.objects.filter(
-#         **add_default_filters()
-#     )[:NUMBER_OF_POSTS]
-#     context: dict = {
-#         'post_list': post_list
-#     }
-#     return render(request, 'blog/index.html', context)
 
 
 class PostDetailView(DetailView):
@@ -56,14 +55,17 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self):
-        return get_object_or_404(
-            get_selection_of_posts('author').filter(id=self.kwargs['post_id']),
-            **add_default_filters(),
-        )
+        """Получает из БД пост и проверяет является ли пользователь автором."""
+        obj = get_selection_of_posts('author').filter(id=self.kwargs['post_id'])
+        if obj and not obj[0].author == self.request.user:
+            filters = add_default_filters()
+        else:
+            filters = dict()
+        return get_object_or_404(obj, **filters)
 
     def get_context_data(self, **kwargs):
         """
-        Добавляем в контекст:
+        Добавляет в контекст:
         - форму для создания комментария,
         - авторов комментариев.
         """
@@ -73,54 +75,29 @@ class PostDetailView(DetailView):
         return context
 
 
-# def post_detail(request: HttpRequest, post_id: int) -> Callable:
-#     """Представление для отдельного поста."""
-#     post = get_object_or_404(
-#         get_selection_of_posts('author').filter(id=post_id),
-#         **add_default_filters(),
-#     )
-#     context: dict = {'post': post}
-#     return render(request, 'blog/detail.html', context)
-
-
 class CategoryListView(ListView):
     """Представление для категорий постов."""
 
-    model = Category  # или Post???
-    ordering = 'pub_date'
     paginate_by = NUMBER_OF_POSTS
     template_name = 'blog/category.html'
 
     def get_queryset(self):
-        return get_list_or_404(
-            Post.objects.select_related('category').filter(
-                category__slug=self.kwargs['category_slug'],
-                **add_default_filters(),
-            ).annotate(comment_count=Count('comments')).order_by('-pub_date'))
+        queryset = get_selection_of_posts('category').filter(
+        category__slug=self.kwargs['category_slug'],
+    ).filter(
+        **add_default_filters()
+    ).annotate(
+        comment_count=Count('comments')
+    ).order_by('-pub_date')
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['category'] = get_object_or_404(Category,
-            slug=self.kwargs['category_slug'],
-            is_published=True
-        )
-        # context['comment_count'] = Comment.objects.filter(post=)
+                          slug=self.kwargs['category_slug'],
+                          is_published=True
+                          )
         return context
-
-
-# def category_posts(request: HttpRequest, category_slug: str) -> Callable:
-#     """Представление для категорий постов."""
-#     category = get_object_or_404(
-#         Category,
-#         slug=category_slug,
-#         is_published=True
-#     )
-#     post_list = get_selection_of_posts('category').filter(
-#         category__slug=category_slug,
-#         **add_default_filters(),
-#     )
-#     context: dict = {'category': category, 'post_list': post_list}
-#     return render(request, 'blog/category.html', context)
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -129,10 +106,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
-    # success_url = reverse_lazy('blog:profile')  # Как здесь написать?
 
-    # С помощью этого метода наконец-то стала загружаться
-    # страница профиля profile/username
     def get_success_url(self):
         """Перенаправляет на страницу профиля пользователя."""
         return reverse_lazy(
@@ -146,13 +120,14 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+class PostUpdateView(AuthorTestMixin, UpdateView):
     """Представление редактирования существующего поста."""
 
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
+
 
     def get_context_data(self, **kwargs):
         """Добавляем в контекст заполненную форму."""
@@ -162,20 +137,11 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         context['form'] = form
         return context
 
-    def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
-        object = self.get_object()
-        return object.author == self.request.user
-
-    def get_success_url(self):
-        """Перенаправляет пользователя на страницу поста."""
-        return reverse_lazy(
-            'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']},
-        )
+    def handle_no_permission(self):
+        return redirect(self.get_success_url())
 
 
-class PostDeleteView(UserPassesTestMixin, DeleteView):
+class PostDeleteView(AuthorTestMixin, DeleteView):
     """Представление удаления текущего поста."""
 
     model = Post
@@ -190,14 +156,9 @@ class PostDeleteView(UserPassesTestMixin, DeleteView):
         context['form'] = form
         return context
 
-    def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
-        object = self.get_object()
-        return object.author == self.request.user
-
     def get_success_url(self):
         """Перенаправляет на страницу профиля пользователя."""
-        return reverse_lazy(
+        return reverse(
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
@@ -211,7 +172,6 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     form_class = CommentForm
 
     def dispatch(self, request, *args, **kwargs):
-        print(kwargs)
         self.post_obj = get_object_or_404(Post, pk=kwargs['post_id'])
         return super().dispatch(request, *args, **kwargs)
 
@@ -221,10 +181,10 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={'post_id': self.post_obj.pk})
+        return reverse('blog:post_detail', kwargs={'post_id': self.kwargs['post_id']})
 
 
-class CommentUpdateView(UserPassesTestMixin, UpdateView):
+class CommentUpdateView(AuthorTestMixin, UpdateView):
     """Представление для редактирования комментария к посту."""
 
     model = Comment
@@ -232,36 +192,15 @@ class CommentUpdateView(UserPassesTestMixin, UpdateView):
     template_name = 'blog/comment.html'
 
     def get_object(self, queryset = None):
-        print(self.request)
         return get_object_or_404(
             Comment,
             id=self.kwargs['comment_id'],
-            # post=self.kwargs['post_id']
         )
 
-    def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
-        object = self.get_object()
-        return object.author == self.request.user
 
-    def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={'post_id': self.kwargs['post_id']})
-
-
-class CommentDeleteView(UserPassesTestMixin, DeleteView):
+class CommentDeleteView(AuthorTestMixin, DeleteView):
     """Представления для удаления комментария к посту."""
 
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-
-    def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
-        object = self.get_object()
-        return object.author == self.request.user
-
-    def get_success_url(self):
-        return reverse_lazy(
-            'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']},
-        )
