@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-
 LENGTH_CHARFIELD = 256
 NUMBER_OF_CHARS = 15
 

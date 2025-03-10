@@ -1,4 +1,5 @@
 from django.urls import path
+
 from .views import AboutTemplateView, RulesTemplateView
 
 app_name: str = 'pages'

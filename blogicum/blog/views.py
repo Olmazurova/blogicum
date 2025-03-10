@@ -1,32 +1,34 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    DetailView,
-    ListView,
-    UpdateView,
-)
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  UpdateView)
 
-from .forms import PostForm, CommentForm
-from .models import Category, Post, Comment
+from .forms import CommentForm, PostForm
+from .models import Category, Comment, Post
 from .utils import add_default_filters, get_selection_of_posts
 
 NUMBER_OF_POSTS = 10
 
 
 class AuthorTestMixin(UserPassesTestMixin):
+    """
+    Миксин добавляет test_func,
+    которая проверяет является ли пользователь автором поста.
+    """
 
     def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
         object = self.get_object()
         return object.author == self.request.user
 
 class ReverseMixin:
+    """
+    Миксин добавляет get_success_url,
+    которая перенаправляет пользователя на страницу поста.
+    """
+
     def get_success_url(self):
-        """Перенаправляет пользователя на страницу поста."""
         return reverse(
             'blog:post_detail',
             kwargs={'post_id': self.kwargs['post_id']},
@@ -55,7 +57,6 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self):
-        """Получает из БД пост и проверяет является ли пользователь автором."""
         obj = get_selection_of_posts('author').filter(id=self.kwargs['post_id'])
         if obj and not obj[0].author == self.request.user:
             filters = add_default_filters()
@@ -64,11 +65,6 @@ class PostDetailView(DetailView):
         return get_object_or_404(obj, **filters)
 
     def get_context_data(self, **kwargs):
-        """
-        Добавляет в контекст:
-        - форму для создания комментария,
-        - авторов комментариев.
-        """
         context = super().get_context_data(**kwargs)
         context['form'] = CommentForm()
         context['comments'] = self.object.comments.select_related('author')
@@ -108,19 +104,17 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     template_name = 'blog/create.html'
 
     def get_success_url(self):
-        """Перенаправляет на страницу профиля пользователя."""
         return reverse_lazy(
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
 
     def form_valid(self, form):
-        """Заполняет поле формы автор и возвращает валидацию формы."""
         form.instance.author = self.request.user
         return super().form_valid(form)
 
 
-class PostUpdateView(AuthorTestMixin, UpdateView):
+class PostUpdateView(AuthorTestMixin, ReverseMixin, UpdateView):
     """Представление редактирования существующего поста."""
 
     model = Post
@@ -130,7 +124,6 @@ class PostUpdateView(AuthorTestMixin, UpdateView):
 
 
     def get_context_data(self, **kwargs):
-        """Добавляем в контекст заполненную форму."""
         context = super().get_context_data(**kwargs)
         instance = get_object_or_404(Post, pk=self.kwargs['post_id'])
         form = PostForm(self.request.POST or None, instance=instance)
@@ -149,7 +142,6 @@ class PostDeleteView(AuthorTestMixin, DeleteView):
     pk_url_kwarg = 'post_id'
 
     def get_context_data(self, **kwargs):
-        """Добавляем в контекст заполненную форму."""
         context = super().get_context_data(**kwargs)
         instance = get_object_or_404(Post, pk=self.kwargs['post_id'])
         form = PostForm(self.request.POST or None, instance=instance)
@@ -157,14 +149,13 @@ class PostDeleteView(AuthorTestMixin, DeleteView):
         return context
 
     def get_success_url(self):
-        """Перенаправляет на страницу профиля пользователя."""
         return reverse(
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
 
 
-class CommentCreateView(LoginRequiredMixin, CreateView):
+class CommentCreateView(LoginRequiredMixin, ReverseMixin, CreateView):
     """Представление создания комментария к посту."""
 
     post_obj = None
@@ -180,11 +171,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         form.instance.post = self.post_obj
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={'post_id': self.kwargs['post_id']})
 
-
-class CommentUpdateView(AuthorTestMixin, UpdateView):
+class CommentUpdateView(AuthorTestMixin, ReverseMixin, UpdateView):
     """Представление для редактирования комментария к посту."""
 
     model = Comment
@@ -198,7 +186,7 @@ class CommentUpdateView(AuthorTestMixin, UpdateView):
         )
 
 
-class CommentDeleteView(AuthorTestMixin, DeleteView):
+class CommentDeleteView(AuthorTestMixin, ReverseMixin, DeleteView):
     """Представления для удаления комментария к посту."""
 
     model = Comment

@@ -1,14 +1,15 @@
-from django.db.models import Count
-from django.shortcuts import render
-from django.views.generic import CreateView, DetailView, UpdateView,ListView
-from django.urls import reverse_lazy
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from blog.models import Post
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.urls import reverse, reverse_lazy
+from django.views.generic import CreateView, ListView, UpdateView
 
+from blog.models import Post
 from core.forms import UserEditForm
+
+NUMBER_OF_POSTS = 10
 
 User = get_user_model()
 
@@ -26,7 +27,7 @@ class UserListView(ListView):
 
     model = User
     template_name = 'blog/profile.html'
-    paginate_by = 10
+    paginate_by = NUMBER_OF_POSTS
 
     def get_queryset(self):
         return Post.objects.filter(
@@ -36,7 +37,6 @@ class UserListView(ListView):
         ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
-        """Добавляем в контекст данные профиля и посты автора."""
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(User, username=self.kwargs['username'])
         context['profile'] = profile
@@ -47,13 +47,12 @@ class UserUpdateView(UserPassesTestMixin, UpdateView):
 
     model = User
     form_class = UserEditForm
-    template_name = 'blog/profile_edit.html'  # ???
+    template_name = 'blog/profile_edit.html'
 
     def get_object(self, queryset = None):
         return get_object_or_404(User, username=self.request.user.username)
 
     def get_context_data(self, **kwargs):
-        """Добавляем в контекст заполненную форму."""
         context = super().get_context_data(**kwargs)
         instance = get_object_or_404(User, id=self.request.user.id)
         form = UserEditForm(self.request.POST or None, instance=instance)
@@ -62,16 +61,11 @@ class UserUpdateView(UserPassesTestMixin, UpdateView):
         return context
 
     def test_func(self):
-        """Проверяет является ли пользователь автором поста."""
         object = self.get_object()
         return object == self.request.user
 
     def get_success_url(self):
-        """Перенаправляет на страницу профиля пользователя."""
-        return reverse_lazy(
+        return reverse(
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
-
-
-
