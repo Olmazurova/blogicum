@@ -42,6 +42,7 @@ class UserListView(ListView):
         context['profile'] = profile
         return context
 
+
 class UserUpdateView(UserPassesTestMixin, UpdateView):
     """Представление редактирования профиля пользователя."""
 
@@ -49,7 +50,7 @@ class UserUpdateView(UserPassesTestMixin, UpdateView):
     form_class = UserEditForm
     template_name = 'blog/profile_edit.html'
 
-    def get_object(self, queryset = None):
+    def get_object(self, queryset=None):
         return get_object_or_404(User, username=self.request.user.username)
 
     def get_context_data(self, **kwargs):

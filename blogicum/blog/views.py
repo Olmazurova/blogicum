@@ -22,6 +22,7 @@ class AuthorTestMixin(UserPassesTestMixin):
         object = self.get_object()
         return object.author == self.request.user
 
+
 class ReverseMixin:
     """
     Миксин добавляет get_success_url,
@@ -33,6 +34,7 @@ class ReverseMixin:
             'blog:post_detail',
             kwargs={'post_id': self.kwargs['post_id']},
         )
+
 
 class IndexListView(ListView):
     """Представление для главной страницы сайта."""
@@ -57,7 +59,9 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def get_object(self):
-        obj = get_selection_of_posts('author').filter(id=self.kwargs['post_id'])
+        obj = get_selection_of_posts('author').filter(
+            id=self.kwargs['post_id']
+        )
         if obj and not obj[0].author == self.request.user:
             filters = add_default_filters()
         else:
@@ -79,20 +83,21 @@ class CategoryListView(ListView):
 
     def get_queryset(self):
         queryset = get_selection_of_posts('category').filter(
-        category__slug=self.kwargs['category_slug'],
-    ).filter(
-        **add_default_filters()
-    ).annotate(
-        comment_count=Count('comments')
-    ).order_by('-pub_date')
+            category__slug=self.kwargs['category_slug'],
+        ).filter(
+            **add_default_filters()
+        ).annotate(
+            comment_count=Count('comments')
+        ).order_by('-pub_date')
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['category'] = get_object_or_404(Category,
-                          slug=self.kwargs['category_slug'],
-                          is_published=True
-                          )
+        context['category'] = get_object_or_404(
+            Category,
+            slug=self.kwargs['category_slug'],
+            is_published=True,
+        )
         return context
 
 
@@ -121,7 +126,6 @@ class PostUpdateView(AuthorTestMixin, ReverseMixin, UpdateView):
     form_class = PostForm
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -179,7 +183,7 @@ class CommentUpdateView(AuthorTestMixin, ReverseMixin, UpdateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
-    def get_object(self, queryset = None):
+    def get_object(self, queryset=None):
         return get_object_or_404(
             Comment,
             id=self.kwargs['comment_id'],

@@ -11,7 +11,7 @@ class AboutTemplateView(TemplateView):
 class RulesTemplateView(TemplateView):
     """Представление отображения статичной страницы 'Правила'."""
 
-    template_name='pages/rules.html'
+    template_name = 'pages/rules.html'
 
 
 def page_not_found(request, exception):

@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserChangeForm
 
 User = get_user_model()
 
+
 class UserEditForm(UserChangeForm):
     """Форма редактирования профиля пользователя."""
 
