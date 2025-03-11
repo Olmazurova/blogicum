@@ -1,7 +1,6 @@
 from django.urls import path
 
 from core.views import UserListView, UserUpdateView
-
 from . import views
 
 app_name: str = 'blog'
